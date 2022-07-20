@@ -1,0 +1,13 @@
+[package]
+name = "reeeeeeeeedis"
+version = "1.0.0"
+edition = "2021"
+
+[dependencies]
+redis = "0.21.5"
+tokio = "1.20.0"
+serde = "1.0.139"
+
+[dependencies.rocket]
+version = "0.5.0-rc.2"
+features = ["json"]
