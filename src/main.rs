@@ -1,6 +1,9 @@
 #[macro_use]
 extern crate rocket;
 
+pub mod cors;
+
+use cors::CORS;
 use redis::Commands;
 use rocket::http::Status;
 use rocket::serde::json::Json;
@@ -95,6 +98,7 @@ fn rocket() -> Rocket<Build> {
   let conn_lock = RwLock::new(conn);
 
   rocket::build()
+    .attach(CORS) //
     .manage(conn_lock) //
     .mount("/", routes![index, post, get]) //
 }
