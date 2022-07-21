@@ -49,31 +49,52 @@ fn get(key: &str, client: &State<RwLock<redis::Connection>>) -> Result<String, S
 
 #[launch]
 fn rocket() -> Rocket<Build> {
-  let url = match env::var("REDIS_URL") {
-    Ok(url) => url,
+  dotenv::dotenv().ok();
+
+  let host = match env::var("REDIS_HOST") {
+    Ok(host) => host,
     Err(_) => String::from(DEFAULT_URL),
   };
 
-  let rocket_port: u16 = match env::var("REEEEEEEEEDIS_PORT") {
+  let port = match env::var("REDIS_PORT") {
     Ok(port) => port.parse().unwrap(),
-    Err(_) => 8989,
+    Err(_) => 6379,
   };
+
+  let username = match env::var("REDIS_USERNAME") {
+    Ok(u) => u,
+    Err(_) => String::from(""),
+  };
+
+  let password = match env::var("REDIS_PASSWORD") {
+    Ok(p) => format!(":{}", p),
+    Err(_) => String::from(""),
+  };
+
+  let separator = match !username.is_empty() || !password.is_empty() {
+    true => String::from("@"),
+    false => String::from(""),
+  };
+
+  let db = match env::var("REDIS_DB") {
+    Ok(db) => db.parse().unwrap(),
+    Err(_) => 0,
+  };
+
+  let url = format!(
+    "redis://{}{}{}{}:{}/{}",
+    username, password, separator, host, port, db
+  );
 
   let client = redis::Client::open(url.clone()).expect("Failed to connect to Redis");
 
   let conn = client
     .get_connection()
-    .expect(format!("Failed to connect to Redis on: {}", &url).as_str());
+    .expect(format!("Failed to connect to Redis at: {}", &url).as_str());
 
   let conn_lock = RwLock::new(conn);
 
-  let config = rocket::Config {
-    port: rocket_port,
-    ..Default::default()
-  };
-
   rocket::build()
-    .configure(config)
     .manage(conn_lock) //
     .mount("/", routes![index, post, get]) //
 }
